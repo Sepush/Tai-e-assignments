@@ -25,6 +25,7 @@ package pascal.taie.analysis.dataflow.analysis;
 import pascal.taie.analysis.dataflow.fact.SetFact;
 import pascal.taie.analysis.graph.cfg.CFG;
 import pascal.taie.config.AnalysisConfig;
+import pascal.taie.ir.exp.RValue;
 import pascal.taie.ir.exp.Var;
 import pascal.taie.ir.stmt.Stmt;
 
@@ -48,23 +49,47 @@ public class LiveVariableAnalysis extends
     @Override
     public SetFact<Var> newBoundaryFact(CFG<Stmt> cfg) {
         // TODO - finish me
-        return null;
+        return new SetFact<Var>();
     }
 
     @Override
     public SetFact<Var> newInitialFact() {
         // TODO - finish me
-        return null;
+        return new SetFact<Var>();
     }
 
     @Override
     public void meetInto(SetFact<Var> fact, SetFact<Var> target) {
         // TODO - finish me
+        target.union(fact);
     }
 
     @Override
     public boolean transferNode(Stmt stmt, SetFact<Var> in, SetFact<Var> out) {
         // TODO - finish me
-        return false;
+        // IN[B] = use[B] union (OUT[B] kiss def[B])
+        var inCp = in.copy();
+        in.clear();
+//        in.union(out);
+//        stmt.getDef().ifPresent(l->{
+//            if(l instanceof Var) {
+//                in.remove((Var) l);
+//            }
+//        });
+        var outCp = out.copy();
+        stmt.getDef()
+                .filter(l -> l instanceof Var)
+                .map(l -> (Var) l)
+                .ifPresent(outCp::remove);
+
+        in.union(outCp);
+
+        stmt.getUses().forEach(use -> {
+            if (use instanceof Var) {
+                in.add((Var) use);
+            }
+        });
+
+        return !inCp.toString().equals(in.toString());
     }
 }
