@@ -26,6 +26,10 @@ import pascal.taie.analysis.dataflow.analysis.DataflowAnalysis;
 import pascal.taie.analysis.dataflow.fact.DataflowResult;
 import pascal.taie.analysis.graph.cfg.CFG;
 
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Queue;
+
 class WorkListSolver<Node, Fact> extends Solver<Node, Fact> {
 
     WorkListSolver(DataflowAnalysis<Node, Fact> analysis) {
@@ -35,6 +39,23 @@ class WorkListSolver<Node, Fact> extends Solver<Node, Fact> {
     @Override
     protected void doSolveForward(CFG<Node> cfg, DataflowResult<Node, Fact> result) {
         // TODO - finish me
+        var workList = new HashSet<Node>();
+        for (var basicBlock:cfg){
+            workList.add(basicBlock);
+        }
+        while (!workList.isEmpty()){
+            var nodeBlock = workList.iterator().next();
+            workList.remove(nodeBlock);
+            for (var pred : cfg.getPredsOf(nodeBlock)){
+                analysis.meetInto(result.getOutFact(pred), result.getInFact(nodeBlock));
+            }// IN[B] = ∩{OUT[P] | P ∈ pred(B)}
+            var in = result.getInFact(nodeBlock);
+            var out = result.getOutFact(nodeBlock);
+            if (analysis.transferNode(nodeBlock, in ,out)){
+                // block out changed add all successors of B to workList
+                cfg.getSuccsOf(nodeBlock).forEach(workList::add);
+            }
+        }
     }
 
     @Override
