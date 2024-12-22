@@ -27,8 +27,6 @@ import pascal.taie.analysis.dataflow.fact.DataflowResult;
 import pascal.taie.analysis.graph.cfg.CFG;
 
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Queue;
 
 class WorkListSolver<Node, Fact> extends Solver<Node, Fact> {
 
@@ -53,7 +51,7 @@ class WorkListSolver<Node, Fact> extends Solver<Node, Fact> {
             var out = result.getOutFact(nodeBlock);
             if (analysis.transferNode(nodeBlock, in ,out)){
                 // block out changed add all successors of B to workList
-                cfg.getSuccsOf(nodeBlock).forEach(workList::add);
+                workList.addAll(cfg.getSuccsOf(nodeBlock));
             }
         }
     }

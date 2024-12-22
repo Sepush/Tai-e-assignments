@@ -80,22 +80,16 @@ public abstract class Solver<Node, Fact> {
         // TODO - finish me
         // OUT[entry] = boundary
         // OUT[B] = boundary for all other nodes
+        // 初始化每个节点的 IN OUT
         var entry = cfg.getEntry();
-        result.setOutFact(entry, analysis.newBoundaryFact(cfg));
         result.setInFact(entry, analysis.newInitialFact());
-//        for (var node : cfg) {
-//            if (cfg.isEntry(node)) continue;
-//            result.setOutFact(node, analysis.newInitialFact());
-//            result.setInFact(node, analysis.newInitialFact());
-//        }
+        result.setOutFact(entry, analysis.newBoundaryFact(cfg));
         for (var node : cfg) {
             if (!cfg.isEntry(node)) {
                 result.setOutFact(node, analysis.newInitialFact());
                 result.setInFact(node, analysis.newInitialFact());
             }
         }
-        System.out.println(result);
-        System.out.println("initializeForward");
     }
 
     protected void initializeBackward(CFG<Node> cfg, DataflowResult<Node, Fact> result) {

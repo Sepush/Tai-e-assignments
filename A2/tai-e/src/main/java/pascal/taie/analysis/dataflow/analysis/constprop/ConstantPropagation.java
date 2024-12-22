@@ -64,53 +64,53 @@ public class ConstantPropagation extends AbstractDataflowAnalysis<Stmt, CPFact> 
     @Override
     public void meetInto(CPFact fact, CPFact target) {
         // TODO - finish me
-        fact.forEach((var, value) -> {
-            target.update(var, meetValue(value, target.get(var)));
-        });
+        fact.forEach((var, value) -> target.update(var, meetValue(value, target.get(var))));
     }
 
     /**
      * Meets two Values.
      */
     public Value meetValue(Value v1, Value v2) {
-        // TODO - finish me
-        //        NAC ⊓ v = NAC
-        //        UNDEF ⊓ v = v Uninitialized variables are not the focus
-        //        in our constant propagation analysis
-        //        c ⊓ v = ?
-        //                - c ⊓ c = c
-        //                - c1 ⊓ c2 = NAC
+        // NAC dominates all other values
         if (v1.isNAC() || v2.isNAC()) {
             return Value.getNAC();
-        } else if (v1.isConstant() && v2.isUndef()) {
-            return Value.makeConstant(v1.getConstant());
-        } else if (v2.isConstant() && v1.isUndef()) {
-            return Value.makeConstant(v2.getConstant());
-        } else if (v1.isConstant() && v2.isConstant()) {
-            if (v1.getConstant() == v2.getConstant()) {
-                return Value.makeConstant(v1.getConstant());
-            } else {
-                return Value.getNAC();
-            }
         }
+
+        // UNDEF is treated as a neutral element (UNDEF ⊓ v = v)
+        if (v1.isUndef()) {
+            return v2;
+        }
+        if (v2.isUndef()) {
+            return v1;
+        }
+
+        // Both values are constants
+        if (v1.isConstant() && v2.isConstant()) {
+            return (v1.getConstant() == v2.getConstant()) ? Value.makeConstant(v1.getConstant()) : Value.getNAC();
+        }
+
+        // Fallback to UNDEF if no other conditions match
         return Value.getUndef();
     }
 
     @Override
     public boolean transferNode(Stmt stmt, CPFact in, CPFact out) {
         // TODO - finish me
-        if (stmt.getDef().isEmpty() || !(stmt.getDef().get() instanceof Var)) {
+        // OUT[B = gen ∪ (IN[B] - {(x,_)}) where x = def(B)
+        if (stmt.getDef().isEmpty() || !(stmt.getDef().get() instanceof Var x)) {
             return out.copyFrom(in);
         }
-        Var x = (Var) stmt.getDef().get();
+
         if (!canHoldInt(x)) {
             return out.copyFrom(in);
         }
-        Value value = evaluate((Exp) (stmt.getUses().get(stmt.getUses().size() - 1)), in);
-        CPFact in_copy = in.copy();
-        in_copy.remove(x);
-        in_copy.update(x, value);
-        return out.copyFrom(in_copy);
+
+        Value value = evaluate(stmt.getUses().get(stmt.getUses().size() - 1), in);
+        CPFact inCopy = in.copy();
+        inCopy.remove(x);
+        inCopy.update(x, value);
+
+        return out.copyFrom(inCopy);
     }
 
     /**
@@ -153,7 +153,7 @@ public class ConstantPropagation extends AbstractDataflowAnalysis<Stmt, CPFact> 
         if (exp instanceof IntLiteral i) { // constants
             return Value.makeConstant(i.getValue());
         } else if (exp instanceof Var v) { // var
-            if(in.get(v).isConstant()){
+            if (in.get(v).isConstant()) {
                 return Value.makeConstant(in.get(v).getConstant());
             }
             return in.get(v);
