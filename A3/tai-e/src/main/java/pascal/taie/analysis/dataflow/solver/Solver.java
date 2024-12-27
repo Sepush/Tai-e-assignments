@@ -78,10 +78,33 @@ public abstract class Solver<Node, Fact> {
 
     protected void initializeForward(CFG<Node> cfg, DataflowResult<Node, Fact> result) {
         // TODO - finish me
+        // OUT[entry] = boundary
+        // OUT[B] = boundary for all other nodes
+        // 初始化每个节点的 IN OUT
+        var entry = cfg.getEntry();
+        result.setInFact(entry, analysis.newInitialFact());
+        result.setOutFact(entry, analysis.newBoundaryFact(cfg));
+        for (var node : cfg) {
+            if (!cfg.isEntry(node)) {
+                result.setOutFact(node, analysis.newInitialFact());
+                result.setInFact(node, analysis.newInitialFact());
+            }
+        }
     }
 
     protected void initializeBackward(CFG<Node> cfg, DataflowResult<Node, Fact> result) {
         // TODO - finish me
+        // IN[exit] = boundary
+        // IN[B] = boundary for all other nodes
+        var exit = cfg.getExit();
+        result.setOutFact(exit, analysis.newInitialFact());
+        result.setInFact(exit, analysis.newBoundaryFact(cfg));
+        for (var node : cfg) {
+            if (!cfg.isExit(node)) {
+                result.setOutFact(node, analysis.newInitialFact());
+                result.setInFact(node, analysis.newInitialFact());
+            }
+        }
     }
 
     /**
