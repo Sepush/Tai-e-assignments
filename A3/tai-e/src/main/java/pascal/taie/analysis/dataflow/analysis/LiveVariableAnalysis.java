@@ -66,7 +66,7 @@ public class LiveVariableAnalysis extends
     @Override
     public boolean transferNode(Stmt stmt, SetFact<Var> in, SetFact<Var> out) {
         // TODO - finish me
-        // IN[B] = use[B] union (OUT[B] kiss def[B])
+        // IN[B] = use[B] union (OUT[B] kill def[B])
         var inCp = in.copy();
         in.clear();
 //        in.union(out);

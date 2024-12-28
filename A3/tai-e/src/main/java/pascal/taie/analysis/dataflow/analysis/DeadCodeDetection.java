@@ -151,7 +151,8 @@ public class DeadCodeDetection extends MethodAnalysis {
      * switch variable is constant
      * and constant variable value match the case value
      * then only add the matched case target to the iterate queue
-     * otherwise, add the default target
+     * if no case matched and variable is constant add the default target
+     * otherwise, add all successors to the iterate queue
      *
      */
     private void handleSwitchStatement(SwitchStmt switchStmt, CFG<Stmt> cfg, DataflowResult<Stmt, CPFact> constants, Queue<Stmt> queue) {

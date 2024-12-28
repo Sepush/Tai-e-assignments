@@ -46,7 +46,7 @@ class WorkListSolver<Node, Fact> extends Solver<Node, Fact> {
             workList.remove(nodeBlock);
             for (var pred : cfg.getPredsOf(nodeBlock)){
                 analysis.meetInto(result.getOutFact(pred), result.getInFact(nodeBlock));
-            }// IN[B] = ∩{OUT[P] | P ∈ pred(B)}
+            }
             var in = result.getInFact(nodeBlock);
             var out = result.getOutFact(nodeBlock);
             if (analysis.transferNode(nodeBlock, in ,out)){
@@ -68,7 +68,7 @@ class WorkListSolver<Node, Fact> extends Solver<Node, Fact> {
             workList.remove(nodeBlock);
             for (var succ : cfg.getSuccsOf(nodeBlock)){
                 analysis.meetInto(result.getInFact(succ), result.getOutFact(nodeBlock));
-            }// IN[B] = ∩{OUT[P] | P ∈ pred(B)}
+            }
             var in = result.getInFact(nodeBlock);
             var out = result.getOutFact(nodeBlock);
             if (analysis.transferNode(nodeBlock, in ,out)){
