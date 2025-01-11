@@ -52,15 +52,15 @@ class CHABuilder implements CGBuilder<Invoke, JMethod> {
         // TODO - finish me
         var workList = new ArrayDeque<JMethod>();
         workList.add(entry);
-        while (!workList.isEmpty()){
+        while (!workList.isEmpty()) {
             var method = workList.removeFirst();
-            if(!callGraph.addReachableMethod(method)){
+            if (callGraph.addReachableMethod(method)) {
                 var steamCallSitesIn = callGraph.callSitesIn(method);
-                steamCallSitesIn.forEach(cs->{
+                steamCallSitesIn.forEach(cs -> {
                     var t = resolve(cs);
                     var callKind = CallGraphs.getCallKind(cs);
-                    t.forEach(target->{
-                        var edge = new Edge<>(callKind,cs,target);
+                    t.forEach(target -> {
+                        var edge = new Edge<>(callKind, cs, target);
                         callGraph.addEdge(edge);
                         workList.add(target);
                     });
@@ -83,7 +83,7 @@ class CHABuilder implements CGBuilder<Invoke, JMethod> {
 
         var kind = CallGraphs.getCallKind(callSite);
         if (kind == CallKind.STATIC) {
-            var method = methodRef.getDeclaringClass().getDeclaredMethod(subsignature);
+            var method = declaringClass.getDeclaredMethod(subsignature);
             if (method != null) {
                 targetMethods.add(method);
             }
