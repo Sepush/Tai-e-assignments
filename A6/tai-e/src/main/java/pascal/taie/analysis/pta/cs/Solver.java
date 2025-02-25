@@ -170,11 +170,11 @@ class Solver {
             if (stmt.isStatic()) {
                 // y = T.m(...)
                 var callee = resolveCallee(null, stmt);
-                var callSite = csManager.getCSCallSite(context, stmt);
-                var calleeCtx = contextSelector.selectContext(callSite, callee);
+                var csCallSite = csManager.getCSCallSite(context, stmt);
+                var calleeCtx = contextSelector.selectContext(csCallSite, callee);
                 var csMethod = csManager.getCSMethod(calleeCtx, callee);
 
-                processCallMethod(stmt, csMethod, calleeCtx, context);
+                processCallMethod(csCallSite, csMethod);
             }
             return null;
         }
@@ -291,18 +291,21 @@ class Solver {
             var csCallSite = csManager.getCSCallSite(callerCtx, invoke);
             var edge = new Edge<>(callKind, csCallSite, csMethod);
             if (callGraph.addEdge(edge)) {
-                processCallMethod(invoke, csMethod, calleeCtx, callerCtx);
+                processCallMethod(csCallSite, csMethod);
             }
         }
     }
 
-    private void processCallMethod(Invoke invoke, CSMethod csMethod, Context calleeCtx, Context callerCtx) {
+    private void processCallMethod(CSCallSite csCallSite, CSMethod csMethod) {
         addReachable(csMethod);
-        passCallArgs(invoke, csMethod, calleeCtx, callerCtx);
-        passCallReturn(invoke, csMethod, calleeCtx, callerCtx);
+        passCallArgs(csCallSite, csMethod);
+        passCallReturn(csCallSite, csMethod);
     }
 
-    private void passCallArgs(Invoke invoke, CSMethod csMethod, Context calleeCtx, Context callerCtx) {
+    private void passCallArgs(CSCallSite csCallSite, CSMethod csMethod) {
+        var callerCtx = csCallSite.getContext();
+        var calleeCtx = csMethod.getContext();
+        var invoke = csCallSite.getCallSite();
         var args = invoke.getInvokeExp().getArgs();
         for (var i = 0; i < args.size(); i++) {
             var arg = args.get(i);
@@ -314,7 +317,10 @@ class Solver {
         }
     }
 
-    private void passCallReturn(Invoke invoke, CSMethod csMethod, Context calleeCtx, Context callerCtx) {
+    private void passCallReturn(CSCallSite csCallSite, CSMethod csMethod) {
+        var callerCtx = csCallSite.getContext();
+        var calleeCtx = csMethod.getContext();
+        var invoke = csCallSite.getCallSite();
         if (invoke.getLValue() != null) {
             var r = invoke.getLValue();
             csMethod.getMethod().getIR().getReturnVars().forEach(ret -> addPFGEdge(
