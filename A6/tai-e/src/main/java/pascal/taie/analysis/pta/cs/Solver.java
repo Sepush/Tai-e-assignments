@@ -275,11 +275,8 @@ class Solver {
         for (var invoke : invokes) {
             var m = resolveCallee(recvObj, invoke);
             var callerCtx = recv.getContext();
-            var calleeCtx = contextSelector.selectContext(
-                    csManager.getCSCallSite(callerCtx, invoke),
-                    recvObj,
-                    m
-            );
+            var csCallSite = csManager.getCSCallSite(callerCtx, invoke);
+            var calleeCtx = contextSelector.selectContext(csCallSite, recvObj, m);
             var mThis = m.getIR().getThis();
             // pass receiver object to this variable
             workList.addEntry(
@@ -288,7 +285,6 @@ class Solver {
             );
             var callKind = CallGraphs.getCallKind(invoke);
             var csMethod = csManager.getCSMethod(calleeCtx, m);
-            var csCallSite = csManager.getCSCallSite(callerCtx, invoke);
             var edge = new Edge<>(callKind, csCallSite, csMethod);
             if (callGraph.addEdge(edge)) {
                 processCallMethod(csCallSite, csMethod);
