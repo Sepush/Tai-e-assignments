@@ -43,7 +43,7 @@ public class _1TypeSelector implements ContextSelector {
     @Override
     public Context selectContext(CSCallSite callSite, JMethod callee) {
         // TODO - finish me
-        return getEmptyContext();
+        return callSite.getContext();
     }
 
     @Override
