@@ -118,14 +118,16 @@ public class ConstantPropagation extends AbstractDataflowAnalysis<Stmt, CPFact> 
      */
     public static boolean canHoldInt(Var var) {
         Type type = var.getType();
-        if (type instanceof PrimitiveType) {
-            switch ((PrimitiveType) type) {
+        if (type instanceof PrimitiveType varType) {
+            switch (varType) {
                 case BYTE:
                 case SHORT:
                 case INT:
                 case CHAR:
                 case BOOLEAN:
                     return true;
+                default:
+                    break;
             }
         }
         return false;
