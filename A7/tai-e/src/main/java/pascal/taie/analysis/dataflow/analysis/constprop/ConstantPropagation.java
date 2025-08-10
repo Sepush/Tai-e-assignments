@@ -26,6 +26,7 @@ import pascal.taie.analysis.dataflow.analysis.AbstractDataflowAnalysis;
 import pascal.taie.analysis.graph.cfg.CFG;
 import pascal.taie.config.AnalysisConfig;
 import pascal.taie.ir.exp.*;
+import pascal.taie.ir.stmt.DefinitionStmt;
 import pascal.taie.ir.stmt.Stmt;
 import pascal.taie.language.type.PrimitiveType;
 import pascal.taie.language.type.Type;
@@ -63,7 +64,6 @@ public class ConstantPropagation extends AbstractDataflowAnalysis<Stmt, CPFact> 
 
     @Override
     public void meetInto(CPFact fact, CPFact target) {
-        // TODO - finish me
         fact.forEach((var, value) -> target.update(var, meetValue(value, target.get(var))));
     }
 
@@ -71,46 +71,38 @@ public class ConstantPropagation extends AbstractDataflowAnalysis<Stmt, CPFact> 
      * Meets two Values.
      */
     public Value meetValue(Value v1, Value v2) {
-        // NAC dominates all other values
-        if (v1.isNAC() || v2.isNAC()) {
+        if(v1.isUndef()&& v2.isConstant()){
+            return v2;
+        } else if (v2.isUndef()&&v1.isConstant()) {
+            return v1;
+        } else if (v1.isNAC()||v2.isNAC()) {
+            return Value.getNAC();
+        } else if (v1.equals(v2)) {
+            return v1;
+        }else{
             return Value.getNAC();
         }
-
-        // UNDEF is treated as a neutral element (UNDEF ⊓ v = v)
-        if (v1.isUndef()) {
-            return v2;
-        }
-        if (v2.isUndef()) {
-            return v1;
-        }
-
-        // Both values are constants
-        if (v1.isConstant() && v2.isConstant()) {
-            return (v1.getConstant() == v2.getConstant()) ? Value.makeConstant(v1.getConstant()) : Value.getNAC();
-        }
-
-        // Fallback to UNDEF if no other conditions match
-        return Value.getUndef();
     }
 
     @Override
     public boolean transferNode(Stmt stmt, CPFact in, CPFact out) {
-        // TODO - finish me
         // OUT[B = gen ∪ (IN[B] - {(x,_)}) where x = def(B)
-        if (stmt.getDef().isEmpty() || !(stmt.getDef().get() instanceof Var x)) {
-            return out.copyFrom(in);
+        if (stmt instanceof DefinitionStmt) {
+            Exp lvalue = ((DefinitionStmt<?, ?>) stmt).getLValue();
+            if (lvalue instanceof Var lhs) {
+                Exp rhs = ((DefinitionStmt<?, ?>) stmt).getRValue();
+                boolean changed = false;
+                for (Var inVar : in.keySet()) {
+                    if (!inVar.equals(lhs)) {
+                        changed |= out.update(inVar, in.get(inVar));
+                    }
+                }
+                return canHoldInt(lhs) ?
+                        out.update(lhs, evaluate(rhs, in)) || changed :
+                        changed;
+            }
         }
-
-        if (!canHoldInt(x)) {
-            return out.copyFrom(in);
-        }
-
-        Value value = evaluate(stmt.getUses().get(stmt.getUses().size() - 1), in);
-        CPFact inCopy = in.copy();
-        inCopy.remove(x);
-        inCopy.update(x, value);
-
-        return out.copyFrom(inCopy);
+        return out.copyFrom(in);
     }
 
     /**
@@ -118,14 +110,16 @@ public class ConstantPropagation extends AbstractDataflowAnalysis<Stmt, CPFact> 
      */
     public static boolean canHoldInt(Var var) {
         Type type = var.getType();
-        if (type instanceof PrimitiveType) {
-            switch ((PrimitiveType) type) {
+        if (type instanceof PrimitiveType varType) {
+            switch (varType) {
                 case BYTE:
                 case SHORT:
                 case INT:
                 case CHAR:
                 case BOOLEAN:
                     return true;
+                default:
+                    break;
             }
         }
         return false;
