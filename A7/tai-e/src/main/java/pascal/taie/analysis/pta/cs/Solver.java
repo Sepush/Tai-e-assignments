@@ -174,7 +174,11 @@ class Solver {
                 var calleeCtx = contextSelector.selectContext(csCallSite, callee);
                 var csMethod = csManager.getCSMethod(calleeCtx, callee);
 
-                processCallMethod(csCallSite, csMethod);
+                var callKind = CallGraphs.getCallKind(stmt);
+                var edge = new Edge<>(callKind, csCallSite, csMethod);
+                if (callGraph.addEdge(edge)) {
+                    processCallMethod(csCallSite, csMethod);
+                }
             }
             return null;
         }
