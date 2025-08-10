@@ -246,12 +246,13 @@ public class InterConstantPropagation extends
 
             @Override
             public Boolean visit(StoreArray store) {
+                var changed = cp.transferNode(store, in, out);
                 arrayStoreToLoads.get(store).forEach(load->{
                     if(transferLoadArray(store, load)) {
                         solver.propagate(load);
                     }
                 });
-                return  cp.transferNode(store, in, out);
+                return changed;
             }
 
             @Override
