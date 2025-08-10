@@ -49,6 +49,7 @@ class InterSolver<Method, Node, Fact> {
                 ICFG<Method, Node> icfg) {
         this.analysis = analysis;
         this.icfg = icfg;
+        workList = new SetQueue<>();
     }
 
     DataflowResult<Node, Fact> solve() {
@@ -59,10 +60,47 @@ class InterSolver<Method, Node, Fact> {
     }
 
     private void initialize() {
-        // TODO - finish me
+        Set<Node> entryNodes = icfg.entryMethods()
+                .map(icfg::getEntryOf)
+                .collect(Collectors.toSet());
+        entryNodes.forEach(entry -> {
+            result.setInFact(entry, analysis.newBoundaryFact(entry));
+            result.setOutFact(entry, analysis.newBoundaryFact(entry));
+        });
+        icfg.forEach(node -> {
+            if (entryNodes.contains(node)) {
+                return;
+            }
+            result.setInFact(node, analysis.newInitialFact());
+            result.setOutFact(node, analysis.newInitialFact());
+        });
     }
 
     private void doSolve() {
-        // TODO - finish me
+        for (var b : icfg) {
+            workList.add(b);
+        }
+        while (!workList.isEmpty()) {
+            Node node = workList.poll();
+            var inFact = result.getInFact(node);
+            for (var inEdge : icfg.getInEdgesOf(node)) {
+                Fact prevOutFact = getOutFact(inEdge.getSource());
+                analysis.meetInto(analysis.transferEdge(inEdge, prevOutFact), inFact);
+            }
+            var outFact = getOutFact(node);
+            boolean changed = analysis.transferNode(node, inFact, outFact);
+            if (changed) {
+                propagate(node);
+            }
+        }
     }
+
+    void propagate(Node node){
+        workList.addAll(icfg.getSuccsOf(node));
+    }
+
+    Fact getOutFact(Node node) {
+        return result.getOutFact(node);
+    }
+
 }
